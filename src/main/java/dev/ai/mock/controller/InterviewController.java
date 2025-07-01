@@ -1,24 +1,36 @@
 package dev.ai.mock.controller;
 
+import dev.ai.mock.entities.ResumeJsonEntity;
+import dev.ai.mock.entities.UserEntity;
 import dev.ai.mock.records.ResumeContent;
+import dev.ai.mock.repository.ResumeJsonRepository;
+import dev.ai.mock.repository.UserRepository;
 import dev.ai.mock.service.ResumeFormatService;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/api/interview")
+@CrossOrigin(origins = "http://localhost:3000")
 public class InterviewController {
+    private final UserRepository userRepository;
+
     public record Question(String question) {}
 
     private final ChatClient chatClient;
     private final ResumeFormatService resumeFormatService;
-    public InterviewController(ChatClient.Builder builder, ChatMemory chatMemory, ResumeFormatService resumeFormatService) {
+    private final ResumeJsonRepository resumeJsonRepository;
+    public InterviewController(ChatClient.Builder builder, ChatMemory chatMemory, ResumeFormatService resumeFormatService, ResumeJsonRepository resumeJsonRepository, UserRepository userRepository) {
+        this.resumeJsonRepository = resumeJsonRepository;
         this.chatClient = builder
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .build();
         this.resumeFormatService = resumeFormatService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/respond")
@@ -31,42 +43,69 @@ public class InterviewController {
     }
 
     @GetMapping("/start/{id}")
-    public String start(@PathVariable(name = "id") Long id) {
-        ResumeContent resume = resumeFormatService.getResume(id);
+    public String start(@PathVariable(name = "id") Long id,
+                        @RequestParam(name = "jobRole") String jobRole,
+                        @RequestParam(name = "company") String company) {
+
+        Optional<UserEntity> optionalUser = userRepository.findById(id);
+        if (optionalUser.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+        UserEntity user = optionalUser.get();
+
+        if(!user.isPro()) {
+            if (user.getTrials() <= 0) {
+                throw new RuntimeException("No remaining trials for mock interview.");
+            }
+            user.setTrials(user.getTrials() - 1);
+            userRepository.save(user);
+        }
+
+        Optional<ResumeJsonEntity> optionalResumeJsonEntity = resumeJsonRepository.findByUserId(id);
+        if(optionalResumeJsonEntity.isEmpty()) {
+            throw new RuntimeException("Resume Have not Uploaded Yet");
+        }
+
+        ResumeContent resume = resumeFormatService.getResume(optionalResumeJsonEntity.get().getId());
 
         var systemInstruction = """
-                You are a highly skilled and adaptive AI Interviewer capable of conducting professional, real-time technical interviews across various roles and domains including but not limited to: Software Development, Machine Learning, Full Stack Development, Cloud, DevOps, Data Engineering, and other modern tech stacks.
-                You are now conducting an interview based on the candidate’s uploaded resume.
-                Your goals are to:
-                - Tailor questions to the candidate’s actual resume content – including skills, certifications, education, internships, and projects.x
-                - Dynamically adapt your questions based on the conversation — diving deeper into responses, clarifying gaps, and testing problem-solving and real-world application of concepts.
-                - Cover multiple areas of evaluation:
-                    - Technical Skills (DSA, Programming, ML, Web Dev, etc.)
-                    - Tools, Frameworks, and Databases
-                    - Project-based understanding and practical application
-                    - Communication, reasoning, and behavioral responses
-                    - Industry-relevant problem scenarios and case studies
-                - Ask one question at a time and wait for the candidate’s response before proceeding.
-                
-                Be professional, structured, and objective — simulating the flow of a real interview with live feedback, clarifications, and follow-up questions.
-                """;
+            You are a professional technical interviewer. Your job is to ask clear, focused, and relevant interview questions one at a time.
+            
+            Your behavior should simulate a real-world technical interview:
+            - Ask concise, realistic questions — no more than 2-3 sentences.
+            - Base your questions on the candidate's resume and the job Role.
+            - Adjust your questions based on the candidate’s previous answers.
+            - Focus on skills, tools, and experiences mentioned in the resume that align with the job.
+            - Prioritize technical, behavioral, and situational questions relevant to the role.
+            - Ask only one question at a time. Wait for an answer before continuing.
+            
+            Stay professional and to the point. Do not explain or justify your questions. Just ask like a real interviewer.
+            """;
 
         var userMessage = """
-                Hi, I’m ready for my interview.
-                Please begin asking questions based on my resume.
+                Hi, I’m ready for my interview. Please begin by asking questions based on my resume and the job description.
+                
+                Resume:
                 {resume}
+                
+                company:
+                {company}
+                
+                Job Role:
+                {jobRole}
                 """;
+
 
         return chatClient.prompt()
                 .system(systemInstruction)
                 .user( u -> {
                     u.text(userMessage);
                     u.param("resume", resume);
+                    u.param("jobRole", jobRole);
+                    u.param("company", company);
                 })
                 .call()
                 .content();
 
     }
-
-
 }

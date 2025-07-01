@@ -10,5 +10,6 @@ import java.util.Optional;
 @Repository
 public interface ResumeJsonRepository extends JpaRepository<ResumeJsonEntity, Long> {
 
-    Optional<ResumeJsonEntity> findByUser(UserEntity user);
+    Optional<ResumeJsonEntity> findByUserId(Long id);
+
 }
