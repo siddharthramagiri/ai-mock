@@ -11,7 +11,6 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/interview")
@@ -40,20 +39,20 @@ public class InterviewController {
                 .user(answer)
                 .call()
                 .entity(Question.class);
+
+//        return new Question("This is your next Question");
     }
 
     @GetMapping("/start/{id}")
-    public String start(@PathVariable(name = "id") Long id,
-                        @RequestParam(name = "jobRole") String jobRole,
-                        @RequestParam(name = "company") String company) {
+    public String startInterview(@PathVariable("id") Long userId,
+                                 @RequestParam("jobRole") String jobRole,
+                                 @RequestParam("company") String company) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Optional<UserEntity> optionalUser = userRepository.findById(id);
-        if (optionalUser.isEmpty()) {
-            throw new RuntimeException("User not found");
-        }
-        UserEntity user = optionalUser.get();
+//        return "Hello There Iam here to Interview you";
 
-        if(!user.isPro()) {
+        if (!user.isPro()) {
             if (user.getTrials() <= 0) {
                 throw new RuntimeException("No remaining trials for mock interview.");
             }
@@ -61,51 +60,48 @@ public class InterviewController {
             userRepository.save(user);
         }
 
-        Optional<ResumeJsonEntity> optionalResumeJsonEntity = resumeJsonRepository.findByUserId(id);
-        if(optionalResumeJsonEntity.isEmpty()) {
-            throw new RuntimeException("Resume Have not Uploaded Yet");
-        }
+        ResumeJsonEntity resumeEntity = resumeJsonRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("Resume has not been uploaded yet."));
 
-        ResumeContent resume = resumeFormatService.getResume(optionalResumeJsonEntity.get().getId());
+        ResumeContent resumeContent = resumeFormatService.getResume(resumeEntity.getId());
 
-        var systemInstruction = """
-            You are a professional technical interviewer. Your job is to ask clear, focused, and relevant interview questions one at a time.
-            
-            Your behavior should simulate a real-world technical interview:
-            - Ask concise, realistic questions — no more than 2-3 sentences.
-            - Base your questions on the candidate's resume and the job Role.
-            - Adjust your questions based on the candidate’s previous answers.
-            - Focus on skills, tools, and experiences mentioned in the resume that align with the job.
-            - Prioritize technical, behavioral, and situational questions relevant to the role.
-            - Ask only one question at a time. Wait for an answer before continuing.
-            
-            Stay professional and to the point. Do not explain or justify your questions. Just ask like a real interviewer.
-            """;
+        String systemPrompt = """
+        You are a professional technical interviewer conducting a realistic mock interview for a job candidate.
+        The candidate has applied for the role of %s at %s.
 
-        var userMessage = """
-                Hi, I’m ready for my interview. Please begin by asking questions based on my resume and the job description.
-                
-                Resume:
-                {resume}
-                
-                company:
-                {company}
-                
-                Job Role:
-                {jobRole}
-                """;
+        Guidelines:
+        - Ask one question at a time.
+        - Focus on resume experiences, skills, and the job role.
+        - Include technical, behavioral, and situational questions.
+        - Adjust your questions based on previous answers.
+        - Stay professional and to-the-point. Do not explain your questions.
 
+        Begin the interview.
+        """.formatted(jobRole, company);
+
+        String userPrompt = """
+        Hi, I’m ready for my interview. Please begin by asking questions based on my resume and the job description.
+
+        Resume:
+        {resume}
+
+        Company:
+        {company}
+
+        Job Role:
+        {job_role}
+        """;
 
         return chatClient.prompt()
-                .system(systemInstruction)
+                .system(systemPrompt)
                 .user( u -> {
-                    u.text(userMessage);
-                    u.param("resume", resume);
-                    u.param("jobRole", jobRole);
+                    u.text(userPrompt);
+                    u.param("resume", resumeContent);
                     u.param("company", company);
+                    u.param("job_role", jobRole);
                 })
                 .call()
                 .content();
-
     }
+
 }
