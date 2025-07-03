@@ -3,6 +3,8 @@ package dev.ai.mock.entities;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 
 @Data
@@ -17,8 +19,8 @@ public class ResumeJsonEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Lob
-    @Column(name = "resume_json", columnDefinition = "json")
+    @Column(name = "resume_json", columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
     private String resumeJson;
 
     @OneToOne

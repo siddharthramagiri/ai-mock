@@ -3,6 +3,7 @@ package dev.ai.mock.config;
 import dev.ai.mock.entities.UserEntity;
 import dev.ai.mock.repository.UserRepository;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -32,7 +33,8 @@ import java.util.Map;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final String frontEndUrl = "http://localhost:3000";
+    @Value("${FRONTEND_URL}")
+    private String frontendUrl;
     private final UserRepository userRepository;
 
     public SecurityConfig(UserRepository userRepository) {
@@ -53,7 +55,7 @@ public class SecurityConfig {
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(oauth2UserService())
                         )
-                        .defaultSuccessUrl(frontEndUrl + "/login/success", true)
+                        .defaultSuccessUrl(frontendUrl + "/login/success", true)
                 )
                 .logout(logout -> logout
                         .logoutUrl("/api/logout") // Changed to match frontend call
@@ -112,7 +114,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(frontEndUrl));
+        config.setAllowedOrigins(List.of(frontendUrl));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With"));
         config.setExposedHeaders(List.of("Authorization"));

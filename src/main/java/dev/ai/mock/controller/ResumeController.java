@@ -10,11 +10,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/resume")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "${frontend.url}")
 public class ResumeController {
 
     private final PdfParserService pdfParserService;
@@ -36,7 +35,7 @@ public class ResumeController {
     @PostMapping("/upload/{id}")
     public ResponseEntity<ResumeContent> uploadAndParseResume(
             @PathVariable(name = "id") Long userId,
-            @RequestParam("file") MultipartFile file) throws IOException {
+            @RequestParam("file") MultipartFile file) {
         try {
             // Validate file
             if (!pdfParserService.isValidPdfFile(file)) {

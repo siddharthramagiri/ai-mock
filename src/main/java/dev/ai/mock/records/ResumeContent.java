@@ -10,7 +10,7 @@ public record ResumeContent(
         String careerObjective,
         List<String> skills,
         List<Education> education,
-        List<WorkExperience> work_Experience,
+        List<WorkExperience> workExperience,
         List<String> internships,
         List<Project> projects,
         List<String> certifications
