@@ -13,6 +13,7 @@ public record ResumeContent(
         List<WorkExperience> workExperience,
         List<String> internships,
         List<Project> projects,
-        List<String> certifications
+        List<String> certifications,
+        List<String> achievements
 ) {
 }
