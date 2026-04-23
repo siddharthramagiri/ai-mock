@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from config import Config
 from extensions import db, session_ext
@@ -34,6 +34,10 @@ def create_app():
 
 
 app = create_app()
+
+@app.route("/", methods=["GET"])
+def health():
+    return jsonify({"health": "OK", "status" : 200 }), 200
 
 if __name__ == "__main__":
     app.run(debug=True, port=8080)
