@@ -26,6 +26,10 @@ const Login = () => {
     window.location.href = `${API_URL}/oauth2/authorization/google`;
   };
 
+  const handleGithubLogin = () => {
+    window.location.href = `${API_URL}/oauth2/authorization/github`;
+  };
+
   return (
 
       <div className="flex min-h-screen bg-gray-50">
@@ -80,7 +84,7 @@ const Login = () => {
               <Button 
                 variant="outline" 
                 className="w-full"
-                onClick={handleGoogleLogin}
+                onClick={handleGithubLogin}
               >
                 <Github className="mr-2 h-4 w-4" />
                 GitHub

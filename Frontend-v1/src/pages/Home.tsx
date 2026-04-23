@@ -195,7 +195,7 @@ const Home = () => {
                 {resumeData ? (
                   <div className="space-y-4">
                     <div>
-                      <h3 className="font-semibold text-lg">{resumeData.candidate_name || 'Unknown Candidate'}</h3>
+                      <h3 className="font-semibold text-lg">{resumeData.candidate_name || 'Refresh the Page to get Candidate Information'}</h3>
                       <p className="text-gray-600">{resumeData.location}</p>
                       {resumeData?.contact_details?.length > 0 &&
                         <div>

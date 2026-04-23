@@ -89,7 +89,7 @@ const ResumeUpload: React.FC<ResumeUploadProps> = ({ onResumeUpload }) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const res = await fetch(`${API_URL}/api/resume/upload/${user.id}`, {
+      const res = await fetch(`${API_URL}/api/resume/upload`, {
         method: 'POST',
         body: formData,
         credentials: 'include'

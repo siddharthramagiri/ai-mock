@@ -103,14 +103,22 @@ const InterviewSession: React.FC<Props> = ({ resumeData, company, jobRole, user,
 
   // Memoized API functions to prevent re-creation
   const fetchFirstQuestion = useCallback(async () => {
-    const params = new URLSearchParams({ jobRole: jobRole || '', company: company || '' });
-    const res = await fetch(`${API_URL}/api/interview/start/${user.id}?${params.toString()}`, {
-      method: 'GET',
-      credentials: 'include'
+    const body = { 
+      jobRole: jobRole || '', 
+      company: company || '' 
+    };
+
+    const res = await fetch(`${API_URL}/api/interview/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body),
     });
+
     if (!res.ok) throw new Error('Failed to start interview');
-    return await res.text();
-  }, [jobRole, company, user.id]);
+
+    return await res.json(); // ✅ FIX
+  }, [jobRole, company]);
 
   const sendAnswerAndGetNext = useCallback(async (answerText: string) => {
     if (!answerText.trim() || isProcessingRef.current) return;
@@ -120,7 +128,7 @@ const InterviewSession: React.FC<Props> = ({ resumeData, company, jobRole, user,
     setIsProcessingAnswer(true);
     
     try {
-      const res = await fetch(`${API_URL}/api/interview/respond`, {
+      const res = await fetch(`${API_URL}/api/interview/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -159,11 +167,11 @@ const InterviewSession: React.FC<Props> = ({ resumeData, company, jobRole, user,
       
       (async () => {
         try {
-          const firstQuestion = await fetchFirstQuestion();
-          setCurrentQuestion(firstQuestion);
+          const data = await fetchFirstQuestion();
+          setCurrentQuestion(data.question);
           setQuestionCount(1);
           
-          speak(firstQuestion, () => setIsSpeaking(false));
+          speak(data.question, () => setIsSpeaking(false));
           setIsSpeaking(true);
         } catch (err) {
           console.error('Error starting interview:', err);
