@@ -17,7 +17,9 @@
 ## Project structure
 
 ```
-backend/
+root/
+├── Frontend-v1/
+│   └── ...
 ├── app.py              # Factory + entry point
 ├── config.py           # All env-based config
 ├── extensions.py       # db, session singletons
@@ -36,7 +38,6 @@ backend/
 ## Quick start
 
 ```bash
-cd backend
 python -m venv venv
 source venv/bin/activate      # Windows: venv\Scripts\activate
 pip install -r requirements.txt
